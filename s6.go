@@ -102,6 +102,18 @@ func (svc *Service) Signal(ctx context.Context, sig syscall.Signal) error {
 	return exec.CommandContext(ctx, "s6-svc", "-s", strconv.Itoa(int(sig)), svc.Dir).Run()
 }
 
+func (svc *Service) Restart(ctx context.Context) error {
+	return exec.CommandContext(ctx, "s6-svc", "-r", svc.Dir).Run()
+}
+
+func (svc *Service) Up(ctx context.Context) error {
+	return exec.CommandContext(ctx, "s6-svc", "-u", svc.Dir).Run()
+}
+
+func (svc *Service) Down(ctx context.Context) error {
+	return exec.CommandContext(ctx, "s6-svc", "-d", svc.Dir).Run()
+}
+
 type ServiceStatus struct {
 	Up        bool
 	UpdownFor time.Duration

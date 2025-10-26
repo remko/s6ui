@@ -16,6 +16,21 @@ import (
 	"github.com/rivo/tview"
 )
 
+var keyToSignal = map[rune]syscall.Signal{
+	'A': syscall.SIGALRM,
+	'B': syscall.SIGABRT,
+	'Q': syscall.SIGQUIT,
+	'H': syscall.SIGHUP,
+	'K': syscall.SIGKILL,
+	'T': syscall.SIGTERM,
+	'I': syscall.SIGINT,
+	'1': syscall.SIGUSR1,
+	'2': syscall.SIGUSR2,
+	'P': syscall.SIGSTOP,
+	'C': syscall.SIGCONT,
+	'Y': syscall.SIGWINCH,
+}
+
 func run() error {
 	if len(os.Args) != 2 {
 		fmt.Printf("Usage: %s <directory>", os.Args[0])
@@ -79,21 +94,59 @@ func run() error {
 		}
 	}()
 
+	getSelectedService := func() *Service {
+		selectedItem := list.GetCurrentItem()
+		if selectedItem >= 0 {
+			return services[selectedItem]
+		}
+		return nil
+	}
+
 	list.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		//nolint:exhaustive
 		switch event.Key() {
 		case tcell.KeyCtrlT:
-			selectedItem := list.GetCurrentItem()
-			if selectedItem >= 0 {
-				err := services[selectedItem].Signal(ctx, syscall.SIGTERM)
-				if err != nil {
-					log.Printf("error sending terminate signal: %v", err)
-				}
-				go update()
-			}
-			return nil
 		case tcell.KeyRune:
+			signal, ok := keyToSignal[event.Rune()]
+			if ok {
+				if svc := getSelectedService(); svc != nil {
+					if err := svc.Signal(ctx, signal); err != nil {
+						log.Printf("error sending terminate signal: %v", err)
+					}
+					go update()
+				}
+				return nil
+			}
+
 			switch event.Rune() {
+			case 'j':
+				return tcell.NewEventKey(tcell.KeyDown, 0, tcell.ModNone)
+			case 'k':
+				return tcell.NewEventKey(tcell.KeyUp, 0, tcell.ModNone)
+			case 'u':
+				if svc := getSelectedService(); svc != nil {
+					if err := svc.Up(ctx); err != nil {
+						log.Printf("error requesting up: %v", err)
+					}
+					go update()
+				}
+				return nil
+			case 'd':
+				if svc := getSelectedService(); svc != nil {
+					if err := svc.Down(ctx); err != nil {
+						log.Printf("error requesting down: %v", err)
+					}
+					go update()
+				}
+				return nil
+			case 'r':
+				if svc := getSelectedService(); svc != nil {
+					if err := svc.Restart(ctx); err != nil {
+						log.Printf("error requesting restart: %v", err)
+					}
+					go update()
+				}
+				return nil
 			case 'q':
 				app.Stop()
 				return nil

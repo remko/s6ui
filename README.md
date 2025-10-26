@@ -2,7 +2,7 @@
 
 Control processes supervised by [s6](https://skarnet.org/software/s6/).
 
-Still very minimal, only supports terminating processes for now. I add features as I need them.
+Still very minimal, only supports up/down/restart/signal for now. I add features as I need them.
 
 <div align="center">
 <img src="https://raw.githubusercontent.com/remko/s6ui/main/doc/img/screenshot.png" alt="Screenshot" width=350/>
