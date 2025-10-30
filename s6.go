@@ -55,14 +55,14 @@ func (svc *Service) Name() string {
 
 func (svc *Service) Stat() (ServiceStatus, error) {
 	var status ServiceStatus
-	cmd := exec.CommandContext(context.Background(), "s6-svstat", "-o", "up,pid,exitcode,signal,updownfor,ready,readyfor", svc.Dir)
+	cmd := exec.CommandContext(context.Background(), "s6-svstat", "-o", "up,pid,exitcode,signal,updownfor,ready,readyfor,normallyup,wantedup", svc.Dir)
 	line, err := cmd.CombinedOutput()
 	if err != nil {
 		return status, fmt.Errorf("error running s6-svstat: %w (%s)", err, line)
 	}
 
 	fields := strings.Fields(string(line))
-	if len(fields) != 7 {
+	if len(fields) != 9 {
 		return status, fmt.Errorf("unexpected output from s6-svstat: %s", line)
 	}
 
@@ -94,6 +94,14 @@ func (svc *Service) Stat() (ServiceStatus, error) {
 		return status, fmt.Errorf("error parsing updownfor field: %w", err)
 	}
 	status.ReadyFor = time.Duration(readyFor) * time.Second
+	status.NormallyUp, err = strconv.ParseBool(fields[7])
+	if err != nil {
+		return status, fmt.Errorf("error parsing normallyup field: %w", err)
+	}
+	status.WantedUp, err = strconv.ParseBool(fields[8])
+	if err != nil {
+		return status, fmt.Errorf("error parsing wantedup field: %w", err)
+	}
 
 	return status, nil
 }
@@ -115,11 +123,13 @@ func (svc *Service) Down(ctx context.Context) error {
 }
 
 type ServiceStatus struct {
-	Up        bool
-	UpdownFor time.Duration
-	Ready     bool
-	ReadyFor  time.Duration
-	Pid       int
-	ExitCode  int
-	Signal    string
+	Up         bool
+	UpdownFor  time.Duration
+	WantedUp   bool
+	NormallyUp bool
+	Ready      bool
+	ReadyFor   time.Duration
+	Pid        int
+	ExitCode   int
+	Signal     string
 }

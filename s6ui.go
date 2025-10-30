@@ -48,7 +48,7 @@ func run() error {
 	}
 
 	app := tview.NewApplication()
-	list := tview.NewList().ShowSecondaryText(false).SetHighlightFullLine(true)
+	list := tview.NewList().ShowSecondaryText(false).SetHighlightFullLine(true).SetSelectedBackgroundColor(tcell.ColorGray)
 	list.SetBorder(true)
 	list.SetTitle(targetDir)
 	for _, svc := range services {
@@ -60,22 +60,41 @@ func run() error {
 		for _, svc := range services {
 			stat, err := svc.Stat()
 			var line strings.Builder
-			line.WriteString(svc.Name() + " - ")
 			if err != nil {
+				line.WriteString("[red]×[white]")
+			} else if stat.Up {
+				if stat.WantedUp {
+					line.WriteString("[green]")
+				} else {
+					line.WriteString("[orange]")
+				}
+				line.WriteString("↑[white]")
+			} else {
+				if stat.WantedUp {
+					line.WriteString("[red]")
+				} else {
+					line.WriteString("[gray]")
+				}
+				line.WriteString("↓[white]")
+			}
+			line.WriteString(" ")
+			if stat.Ready {
+				line.WriteString("[green]✓[white]")
+			} else {
+				line.WriteString(" ")
+			}
+			line.WriteString(" ")
+
+			line.WriteString(svc.Name())
+			if err != nil {
+				line.WriteString(" - ")
 				line.WriteString(fmt.Sprintf("[red]error: %s[white]", err))
 			} else {
-				if stat.Up {
-					line.WriteString("[green]up[white] - ")
-					line.WriteString(fmt.Sprintf("[grey]pid: %d[white] - ", stat.Pid))
-				} else {
-					line.WriteString("[red]down[white] - ")
-					line.WriteString(fmt.Sprintf("exitcode: %d - ", stat.ExitCode))
+				if !stat.Up && stat.WantedUp {
+					line.WriteString(" - ")
+					line.WriteString(fmt.Sprintf("[red]exitcode: %d - ", stat.ExitCode))
 					line.WriteString(fmt.Sprintf("signal: %s - ", stat.Signal))
-				}
-				line.WriteString(stat.UpdownFor.String())
-				if stat.Ready {
-					line.WriteString("  [green]ready[white] - ")
-					line.WriteString(stat.ReadyFor.String())
+					line.WriteString("[white]")
 				}
 			}
 			lines = append(lines, line.String())
