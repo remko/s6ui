@@ -3,7 +3,7 @@ MODERNIZE=go tool modernize
 
 .PHONY: all
 all:
-	go build .
+	go build ./cmd/s6ui
 
 .PHONY: lint
 lint: lint-go

@@ -10,6 +10,6 @@ Still very minimal, only supports up/down/restart/signal for now. I add features
 
 ## Usage
 
-    go run mko.re/s6ui@latest /path/to/scan/dir
+    go run mko.re/s6ui/cmd/s6ui@latest /path/to/scan/dir
 
 

@@ -1,4 +1,4 @@
-package main
+package s6ui
 
 import (
 	"context"

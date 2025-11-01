@@ -14,6 +14,7 @@ import (
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
+	"mko.re/s6ui"
 )
 
 var keyToSignal = map[rune]syscall.Signal{
@@ -40,7 +41,7 @@ func run() error {
 
 	ctx := context.Background()
 
-	s6 := S6{Dir: targetDir}
+	s6 := s6ui.S6{Dir: targetDir}
 
 	services, err := s6.ListServices()
 	if err != nil {
@@ -113,7 +114,7 @@ func run() error {
 		}
 	}()
 
-	getSelectedService := func() *Service {
+	getSelectedService := func() *s6ui.Service {
 		selectedItem := list.GetCurrentItem()
 		if selectedItem >= 0 {
 			return services[selectedItem]
