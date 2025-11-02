@@ -3,8 +3,9 @@
 Control processes supervised by [s6](https://skarnet.org/software/s6/).
 
 <div align="center">
-<img src="https://raw.githubusercontent.com/remko/s6ui/main/doc/img/screenshot.png" alt="Screenshot" width=350/>
+<img src="https://raw.githubusercontent.com/remko/s6ui/main/doc/img/screenshot.png" width=350 alt="Screenshot"/></a>&nbsp;<img src="https://raw.githubusercontent.com/remko/s6ui/main/doc/img/help.png" alt="Help" width=350/>
 </div>
+
 
 ## Usage
 
