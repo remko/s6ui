@@ -12,6 +12,8 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/hpcloud/tail"
 )
 
 type S6 struct {
@@ -120,6 +122,14 @@ func (svc *Service) Up(ctx context.Context) error {
 
 func (svc *Service) Down(ctx context.Context) error {
 	return exec.CommandContext(ctx, "s6-svc", "-d", svc.Dir).Run()
+}
+
+func (svc *Service) OpenLog() (*tail.Tail, error) {
+	return tail.TailFile(filepath.Join(svc.Dir, "log", "log", "current"), tail.Config{
+		Follow:    true,
+		ReOpen:    true,
+		MustExist: false,
+	})
 }
 
 type ServiceStatus struct {

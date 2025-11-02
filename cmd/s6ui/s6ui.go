@@ -1,11 +1,10 @@
-///usr/bin/true; exec /usr/bin/env go run "$0" "$@".
-
 //nolint:forbidigo
 package main
 
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"strings"
@@ -13,6 +12,7 @@ import (
 	"time"
 
 	"github.com/gdamore/tcell/v2"
+	"github.com/hpcloud/tail"
 	"github.com/rivo/tview"
 	"mko.re/s6ui"
 )
@@ -51,7 +51,7 @@ func run() error {
 	app := tview.NewApplication()
 	list := tview.NewList().ShowSecondaryText(false).SetHighlightFullLine(true).SetSelectedBackgroundColor(tcell.ColorGray)
 	list.SetBorder(true)
-	list.SetTitle(targetDir)
+	list.SetTitle("Services")
 	for _, svc := range services {
 		list.AddItem(svc.Name(), "", 0, nil)
 	}
@@ -122,10 +122,60 @@ func run() error {
 		return nil
 	}
 
+	logV := tview.NewTextView()
+	logV.SetBorder(true)
+	logV.SetTitle("Log")
+	logV.SetDynamicColors(true)
+
+	////////////////////////////////////////////////////////////////////////////////
+
+	var cleanup []*tail.Tail
+	var logT *tail.Tail
+	var logW io.Writer
+	reloadLog := func() {
+		logV.Clear()
+		if logT != nil {
+			_ = logT.Stop()
+			cleanup = append(cleanup, logT)
+		}
+		svc := getSelectedService()
+		if svc == nil {
+			return
+		}
+		logT, err = svc.OpenLog()
+		if err != nil {
+			logT = nil
+			_, _ = logV.Write([]byte(tview.Escape(fmt.Sprintf("[red]Error opening log: %v[white]\n", err))))
+			return
+		}
+		logW = tview.ANSIWriter(logV)
+		logV.ScrollToEnd()
+		go func() {
+			for line := range logT.Lines {
+				app.QueueUpdateDraw(func() {
+					_, _ = logW.Write([]byte(tview.Escape(line.Text) + "\n"))
+				})
+			}
+		}()
+	}
+
+	////////////////////////////////////////////////////////////////////////////////
+
 	list.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		//nolint:exhaustive
 		switch event.Key() {
-		case tcell.KeyCtrlT:
+		case tcell.KeyHome, tcell.KeyCtrlA:
+			logV.ScrollToBeginning()
+		case tcell.KeyEnd, tcell.KeyCtrlE:
+			logV.ScrollToEnd()
+		case tcell.KeyPgUp, tcell.KeyCtrlU:
+			_, _, _, height := logV.GetInnerRect()
+			row, _ := logV.GetScrollOffset()
+			logV.ScrollTo(row-height, 0)
+		case tcell.KeyPgDn, tcell.KeyCtrlD:
+			_, _, _, height := logV.GetInnerRect()
+			row, _ := logV.GetScrollOffset()
+			logV.ScrollTo(row+height, 0)
 		case tcell.KeyRune:
 			signal, ok := keyToSignal[event.Rune()]
 			if ok {
@@ -174,10 +224,24 @@ func run() error {
 		}
 		return event
 	})
+	list.SetChangedFunc(func(index int, mainText string, secondaryText string, shortcut rune) {
+		reloadLog()
+	})
+	reloadLog()
 
-	if err := app.SetRoot(list, true).Run(); err != nil {
+	////////////////////////////////////////////////////////////////////////////////
+
+	flex := tview.NewFlex().
+		AddItem(list, 0, 1, true).AddItem(logV, 0, 3, false)
+
+	if err := app.SetRoot(flex, true).Run(); err != nil {
 		return err
 	}
+
+	for _, t := range cleanup {
+		t.Cleanup()
+	}
+
 	return nil
 }
 
