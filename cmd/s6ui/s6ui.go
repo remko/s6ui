@@ -8,6 +8,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"regexp"
 	"strings"
 	"syscall"
 	"time"
@@ -53,6 +54,7 @@ func run() error {
 	}
 
 	app := tview.NewApplication()
+	app.EnableMouse(true)
 
 	var pages *tview.Pages
 
@@ -131,7 +133,6 @@ func run() error {
 
 	logV := tview.NewTextView()
 	logV.SetBorder(true)
-	logV.SetTitle("Log")
 	logV.SetDynamicColors(true)
 
 	////////////////////////////////////////////////////////////////////////////////
@@ -139,16 +140,14 @@ func run() error {
 	var cleanup []*tail.Tail
 	var logT *tail.Tail
 	var logW io.Writer
-	reloadLog := func() {
+	loadLog := func(svci int) {
 		logV.Clear()
 		if logT != nil {
 			_ = logT.Stop()
 			cleanup = append(cleanup, logT)
 		}
-		svc := getSelectedService()
-		if svc == nil {
-			return
-		}
+		svc := services[svci]
+		logV.SetTitle(fmt.Sprintf("%s (log)", svc.Name()))
 		logT, err = svc.OpenLog()
 		if err != nil {
 			logT = nil
@@ -160,7 +159,7 @@ func run() error {
 		go func() {
 			for line := range logT.Lines {
 				app.QueueUpdateDraw(func() {
-					_, _ = logW.Write([]byte(tview.Escape(line.Text) + "\n"))
+					_, _ = logW.Write([]byte(colorizeLog(tview.Escape(line.Text)) + "\n"))
 				})
 			}
 		}()
@@ -269,9 +268,9 @@ func run() error {
 		return event
 	})
 	list.SetChangedFunc(func(index int, mainText string, secondaryText string, shortcut rune) {
-		reloadLog()
+		loadLog(index)
 	})
-	reloadLog()
+	loadLog(0)
 
 	////////////////////////////////////////////////////////////////////////////////
 
@@ -294,6 +293,12 @@ func run() error {
 	}
 
 	return nil
+}
+
+var timeRE = regexp.MustCompile(`^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d+)`)
+
+func colorizeLog(s string) string {
+	return timeRE.ReplaceAllString(s, `[gray]$1[-]`)
 }
 
 func main() {
