@@ -1,0 +1,25 @@
+
+  [yellow]Navigation[-]
+    [::b]j/↓[::-]         - Move down
+    [::b]k/↑[::-]         - Move up
+    [::b]Home/Ctrl+A[::-] - Scroll log to beginning
+    [::b]End/Ctrl+E[::-]  - Scroll log to end
+    [::b]PgUp/Ctrl+U[::-] - Page up in log
+    [::b]PgDn/Ctrl+D[::-] - Page down in log
+
+  [yellow]Service Control[-]
+    [::b]u[::-] - Start service (up)
+    [::b]d[::-] - Stop service (down)
+    [::b]r[::-] - Restart service
+
+  [yellow]Signals[-]
+    [::b]A[::-] - SIGALRM    [::b]B[::-] - SIGABRT
+    [::b]Q[::-] - SIGQUIT    [::b]H[::-] - SIGHUP
+    [::b]K[::-] - SIGKILL    [::b]T[::-] - SIGTERM
+    [::b]I[::-] - SIGINT     [::b]P[::-] - SIGSTOP
+    [::b]C[::-] - SIGCONT    [::b]Y[::-] - SIGWINCH
+    [::b]1[::-] - SIGUSR1    [::b]2[::-] - SIGUSR2
+
+  [yellow]Other[-]
+    [::b]?[::-] - Show this help
+    [::b]q[::-] - Quit

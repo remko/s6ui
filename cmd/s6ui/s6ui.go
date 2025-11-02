@@ -3,6 +3,7 @@ package main
 
 import (
 	"context"
+	_ "embed"
 	"fmt"
 	"io"
 	"log"
@@ -16,6 +17,9 @@ import (
 	"github.com/rivo/tview"
 	"mko.re/s6ui"
 )
+
+//go:embed help.txt
+var helpText string
 
 var keyToSignal = map[rune]syscall.Signal{
 	'A': syscall.SIGALRM,
@@ -49,6 +53,9 @@ func run() error {
 	}
 
 	app := tview.NewApplication()
+
+	var pages *tview.Pages
+
 	list := tview.NewList().ShowSecondaryText(false).SetHighlightFullLine(true).SetSelectedBackgroundColor(tcell.ColorGray)
 	list.SetBorder(true)
 	list.SetTitle("Services")
@@ -160,6 +167,40 @@ func run() error {
 	}
 
 	////////////////////////////////////////////////////////////////////////////////
+	// Help
+	////////////////////////////////////////////////////////////////////////////////
+
+	helpLines := strings.Split(helpText, "\n")
+
+	// AddButtons([]string{"Close"}).
+	// SetDoneFunc(func(buttonIndex int, buttonLabel string) {
+	// 	pages.HidePage("help")
+	// })
+
+	helpV := tview.NewTextView()
+	helpV.SetTitle("Help")
+	helpV.SetTitleColor(tcell.ColorYellow)
+	helpV.SetBackgroundColor(tcell.ColorDarkBlue)
+	helpV.SetText(helpText)
+	helpV.SetDynamicColors(true)
+	helpV.SetBorder(true)
+
+	helpModal := tview.NewFlex().
+		AddItem(nil, 0, 1, false).
+		AddItem(tview.NewFlex().SetDirection(tview.FlexRow).
+			AddItem(nil, 0, 1, false).
+			AddItem(helpV, len(helpLines)+2, 1, true).
+			AddItem(nil, 0, 1, false), 48, 1, true).
+		AddItem(nil, 0, 1, false)
+	helpModal.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Key() == tcell.KeyEsc || event.Key() == tcell.KeyEnter || (event.Key() == tcell.KeyRune && event.Rune() == 'q') {
+			pages.HidePage("help")
+			return nil
+		}
+		return event
+	})
+
+	////////////////////////////////////////////////////////////////////////////////
 
 	list.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		//nolint:exhaustive
@@ -189,6 +230,9 @@ func run() error {
 			}
 
 			switch event.Rune() {
+			case '?':
+				pages.ShowPage("help")
+				return nil
 			case 'j':
 				return tcell.NewEventKey(tcell.KeyDown, 0, tcell.ModNone)
 			case 'k':
@@ -234,7 +278,14 @@ func run() error {
 	flex := tview.NewFlex().
 		AddItem(list, 0, 1, true).AddItem(logV, 0, 3, false)
 
-	if err := app.SetRoot(flex, true).Run(); err != nil {
+	frame := tview.NewFrame(flex).SetBorders(0, 0, 0, 0, 0, 0)
+	frame.AddText("?: Help", false, tview.AlignCenter, tcell.ColorGreen)
+
+	pages = tview.NewPages()
+	pages.AddPage("main", frame, true, true)
+	pages.AddPage("help", helpModal, true, false)
+
+	if err := app.SetRoot(pages, true).Run(); err != nil {
 		return err
 	}
 
