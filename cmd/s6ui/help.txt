@@ -6,6 +6,7 @@
     [::b]End/Ctrl+E[::-]  - Scroll log to end
     [::b]PgUp/Ctrl+U[::-] - Page up in log
     [::b]PgDn/Ctrl+D[::-] - Page down in log
+    [::b]Enter[::-]       - Toggle log
 
   [yellow]Service Control[-]
     [::b]u[::-] - Start service (up)

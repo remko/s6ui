@@ -140,6 +140,7 @@ func run() error {
 	var cleanup []*tail.Tail
 	var logT *tail.Tail
 	var logW io.Writer
+	logViewVisible := false
 	loadLog := func(svci int) {
 		logV.Clear()
 		if logT != nil {
@@ -205,9 +206,26 @@ func run() error {
 
 	////////////////////////////////////////////////////////////////////////////////
 
+	flex := tview.NewFlex().
+		AddItem(list, 0, 1, true)
+
 	list.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		//nolint:exhaustive
 		switch event.Key() {
+		case tcell.KeyEnter:
+			logViewVisible = !logViewVisible
+			if logViewVisible {
+				flex.AddItem(logV, 0, 3, false)
+				loadLog(list.GetCurrentItem())
+			} else {
+				flex.RemoveItem(logV)
+				if logT != nil {
+					_ = logT.Stop()
+					cleanup = append(cleanup, logT)
+					logT = nil
+				}
+			}
+			return nil
 		case tcell.KeyCtrlL:
 			app.Sync()
 			return nil
@@ -279,14 +297,12 @@ func run() error {
 		return event
 	})
 	list.SetChangedFunc(func(index int, mainText string, secondaryText string, shortcut rune) {
-		loadLog(index)
+		if logViewVisible {
+			loadLog(index)
+		}
 	})
-	loadLog(0)
 
 	////////////////////////////////////////////////////////////////////////////////
-
-	flex := tview.NewFlex().
-		AddItem(list, 0, 1, true).AddItem(logV, 0, 3, false)
 
 	frame := tview.NewFrame(flex).SetBorders(0, 0, 0, 0, 0, 0)
 	frame.AddText("?: Help", false, tview.AlignCenter, tcell.ColorGreen)
