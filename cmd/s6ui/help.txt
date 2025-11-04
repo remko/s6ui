@@ -21,5 +21,6 @@
     [::b]1[::-] - SIGUSR1    [::b]2[::-] - SIGUSR2
 
   [yellow]Other[-]
-    [::b]?[::-] - Show this help
-    [::b]q[::-] - Quit
+    [::b]?[::-]      - Show this help
+    [::b]Ctrl+L[::-] - Redraw screen
+    [::b]q[::-]      - Quit

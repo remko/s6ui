@@ -154,6 +154,7 @@ func run() error {
 			_, _ = logV.Write([]byte(tview.Escape(fmt.Sprintf("[red]Error opening log: %v[white]\n", err))))
 			return
 		}
+		logT.Logger = tail.DiscardingLogger
 		logW = tview.ANSIWriter(logV)
 		logV.ScrollToEnd()
 		go func() {
@@ -195,6 +196,9 @@ func run() error {
 		if event.Key() == tcell.KeyEsc || event.Key() == tcell.KeyEnter || (event.Key() == tcell.KeyRune && event.Rune() == 'q') {
 			pages.HidePage("help")
 			return nil
+		} else if event.Key() == tcell.KeyCtrlL {
+			app.Sync()
+			return nil
 		}
 		return event
 	})
@@ -204,18 +208,25 @@ func run() error {
 	list.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		//nolint:exhaustive
 		switch event.Key() {
+		case tcell.KeyCtrlL:
+			app.Sync()
+			return nil
 		case tcell.KeyHome, tcell.KeyCtrlA:
 			logV.ScrollToBeginning()
+			return nil
 		case tcell.KeyEnd, tcell.KeyCtrlE:
 			logV.ScrollToEnd()
+			return nil
 		case tcell.KeyPgUp, tcell.KeyCtrlU:
 			_, _, _, height := logV.GetInnerRect()
 			row, _ := logV.GetScrollOffset()
 			logV.ScrollTo(row-height, 0)
+			return nil
 		case tcell.KeyPgDn, tcell.KeyCtrlD:
 			_, _, _, height := logV.GetInnerRect()
 			row, _ := logV.GetScrollOffset()
 			logV.ScrollTo(row+height, 0)
+			return nil
 		case tcell.KeyRune:
 			signal, ok := keyToSignal[event.Rune()]
 			if ok {
