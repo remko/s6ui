@@ -135,6 +135,24 @@ func run() error {
 	logV.SetBorder(true)
 	logV.SetDynamicColors(true)
 
+	loadingTV := tview.NewTextView()
+	loadingTV.SetTextColor(tcell.ColorYellow)
+	loadingTV.SetTextAlign(tview.AlignCenter)
+	loadingTV.SetText("Loading ...")
+
+	loadingV := tview.NewFlex().SetDirection(tview.FlexRow).
+		AddItem(tview.NewBox(), 0, 1, false).
+		AddItem(tview.NewFlex().
+			AddItem(tview.NewBox(), 0, 1, false).
+			AddItem(loadingTV, 0, 1, false).
+			AddItem(tview.NewBox(), 0, 1, false), 1, 0, false).
+		AddItem(tview.NewBox(), 0, 1, false)
+	loadingV.SetBorder(true)
+
+	logContainer := tview.NewPages()
+	logContainer.AddPage("log", logV, true, true)
+	logContainer.AddPage("loading", loadingV, true, false)
+
 	////////////////////////////////////////////////////////////////////////////////
 
 	var cleanup []*tail.Tail
@@ -161,6 +179,7 @@ func run() error {
 
 		svc := services[svci]
 		logV.SetTitle(fmt.Sprintf("%s (log)", svc.Name()))
+		loadingV.SetTitle(fmt.Sprintf("%s (log)", svc.Name()))
 		logT, err = svc.OpenLog()
 		if err != nil {
 			logT = nil
@@ -174,6 +193,7 @@ func run() error {
 		inDebounce := true
 		debounceCtx, cancel := context.WithCancel(ctx)
 		logDebounceCancel = cancel
+		logContainer.ShowPage("loading")
 
 		go func() {
 			for line := range logT.Lines {
@@ -202,6 +222,7 @@ func run() error {
 							logDebounceTimer = nil
 							inDebounce = false
 							logV.ScrollToEnd()
+							logContainer.HidePage("loading")
 						})
 					})
 				}
@@ -264,10 +285,10 @@ func run() error {
 		case tcell.KeyEnter:
 			logViewVisible = !logViewVisible
 			if logViewVisible {
-				flex.AddItem(logV, 0, 3, false)
+				flex.AddItem(logContainer, 0, 3, false)
 				loadLog(list.GetCurrentItem())
 			} else {
-				flex.RemoveItem(logV)
+				flex.RemoveItem(logContainer)
 				if logT != nil {
 					_ = logT.Stop()
 					cleanup = append(cleanup, logT)
