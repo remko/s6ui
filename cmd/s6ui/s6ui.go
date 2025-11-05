@@ -209,6 +209,9 @@ func run() error {
 	flex := tview.NewFlex().
 		AddItem(list, 0, 1, true)
 
+	var lastKeyTime time.Time
+	var lastKey rune
+
 	list.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		//nolint:exhaustive
 		switch event.Key() {
@@ -260,6 +263,20 @@ func run() error {
 			switch event.Rune() {
 			case '?':
 				pages.ShowPage("help")
+				return nil
+			case 'g':
+				// Handle 'gg' for going to the beginning
+				now := time.Now()
+				if lastKey == 'g' && now.Sub(lastKeyTime) < 500*time.Millisecond {
+					list.SetCurrentItem(0)
+					lastKey = 0
+					return nil
+				}
+				lastKey = 'g'
+				lastKeyTime = now
+				return nil
+			case 'G':
+				list.SetCurrentItem(list.GetItemCount() - 1)
 				return nil
 			case 'j':
 				return tcell.NewEventKey(tcell.KeyDown, 0, tcell.ModNone)
