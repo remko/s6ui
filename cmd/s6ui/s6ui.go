@@ -140,13 +140,25 @@ func run() error {
 	var cleanup []*tail.Tail
 	var logT *tail.Tail
 	var logW io.Writer
+	var logDebounceTimer *time.Timer
+	var logDebounceCancel context.CancelFunc
 	logViewVisible := false
 	loadLog := func(svci int) {
 		logV.Clear()
+		if logDebounceCancel != nil {
+			logDebounceCancel()
+			logDebounceCancel = nil
+		}
+		if logDebounceTimer != nil {
+			logDebounceTimer.Stop()
+			logDebounceTimer = nil
+		}
+
 		if logT != nil {
 			_ = logT.Stop()
 			cleanup = append(cleanup, logT)
 		}
+
 		svc := services[svci]
 		logV.SetTitle(fmt.Sprintf("%s (log)", svc.Name()))
 		logT, err = svc.OpenLog()
@@ -156,13 +168,47 @@ func run() error {
 			return
 		}
 		logT.Logger = tail.DiscardingLogger
+
+		logV.ScrollToBeginning()
 		logW = tview.ANSIWriter(logV)
-		logV.ScrollToEnd()
+		inDebounce := true
+		debounceCtx, cancel := context.WithCancel(ctx)
+		logDebounceCancel = cancel
+
 		go func() {
 			for line := range logT.Lines {
+				select {
+				case <-debounceCtx.Done():
+					return
+				default:
+				}
+
 				app.QueueUpdateDraw(func() {
 					_, _ = logW.Write([]byte(colorizeLog(tview.Escape(line.Text)) + "\n"))
 				})
+
+				if inDebounce {
+					if logDebounceTimer != nil {
+						logDebounceTimer.Stop()
+					}
+					logDebounceTimer = time.AfterFunc(500*time.Millisecond, func() {
+						select {
+						case <-debounceCtx.Done():
+							return
+						default:
+						}
+
+						app.QueueUpdateDraw(func() {
+							logDebounceTimer = nil
+							inDebounce = false
+							logV.ScrollToEnd()
+						})
+					})
+				}
+			}
+			if logDebounceTimer != nil {
+				logDebounceTimer.Stop()
+				logDebounceTimer = nil
 			}
 		}()
 	}
@@ -350,3 +396,12 @@ func main() {
 		panic(err)
 	}
 }
+
+// func init() {
+// 	logFile, err := os.OpenFile("s6ui.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+// 	if err != nil {
+// 		log.Fatalf("error opening log file: %v", err)
+// 	}
+// 	log.SetOutput(logFile)
+// 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
+// }
