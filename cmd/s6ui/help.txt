@@ -2,12 +2,12 @@
   [yellow]Navigation[-]
     [::b]j/↓[::-]         - Move down
     [::b]k/↑[::-]         - Move up
-    [::b]gg[::-]          - Go to beginning
-    [::b]G[::-]           - Go to end
-    [::b]Home/Ctrl+A[::-] - Scroll log to beginning
-    [::b]End/Ctrl+E[::-]  - Scroll log to end
-    [::b]PgUp/Ctrl+U[::-] - Page up in log
-    [::b]PgDn/Ctrl+D[::-] - Page down in log
+    [::b]gg[::-]          - Go to beginning (Services)
+    [::b]G[::-]           - Go to end (Services)
+    [::b]Home/Ctrl+A[::-] - Scroll to beginning
+    [::b]End/Ctrl+E[::-]  - Scroll to end
+    [::b]PgUp/Ctrl+U[::-] - Page up
+    [::b]PgDn/Ctrl+D[::-] - Page down
     [::b]Enter[::-]       - Toggle log
 
   [yellow]Service Control[-]

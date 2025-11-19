@@ -262,20 +262,49 @@ func run() error {
 			app.Sync()
 			return nil
 		case tcell.KeyHome, tcell.KeyCtrlA:
-			logV.ScrollToBeginning()
+			if logViewVisible {
+				logV.ScrollToBeginning()
+				return nil
+			}
+			list.SetCurrentItem(0)
 			return nil
 		case tcell.KeyEnd, tcell.KeyCtrlE:
-			logV.ScrollToEnd()
+			if logViewVisible {
+				logV.ScrollToEnd()
+				return nil
+			}
+			list.SetCurrentItem(list.GetItemCount() - 1)
 			return nil
 		case tcell.KeyPgUp, tcell.KeyCtrlU:
-			_, _, _, height := logV.GetInnerRect()
-			row, _ := logV.GetScrollOffset()
-			logV.ScrollTo(row-height, 0)
+			if logViewVisible {
+				_, _, _, height := logV.GetInnerRect()
+				row, _ := logV.GetScrollOffset()
+				logV.ScrollTo(row-height, 0)
+				return nil
+			}
+			_, _, _, height := list.GetInnerRect()
+			currentItem := list.GetCurrentItem()
+			newItem := currentItem - height
+			if newItem < 0 {
+				newItem = 0
+			}
+			list.SetCurrentItem(newItem)
 			return nil
 		case tcell.KeyPgDn, tcell.KeyCtrlD:
-			_, _, _, height := logV.GetInnerRect()
-			row, _ := logV.GetScrollOffset()
-			logV.ScrollTo(row+height, 0)
+			if logViewVisible {
+				_, _, _, height := logV.GetInnerRect()
+				row, _ := logV.GetScrollOffset()
+				logV.ScrollTo(row+height, 0)
+				return nil
+			}
+			_, _, _, height := list.GetInnerRect()
+			currentItem := list.GetCurrentItem()
+			newItem := currentItem + height
+			maxItem := list.GetItemCount() - 1
+			if newItem > maxItem {
+				newItem = maxItem
+			}
+			list.SetCurrentItem(newItem)
 			return nil
 		case tcell.KeyRune:
 			signal, ok := keyToSignal[event.Rune()]
